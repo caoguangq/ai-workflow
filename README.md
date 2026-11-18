@@ -100,7 +100,7 @@ python <本仓库>/scripts/detect_profile.py --root . --write
 | 命令写法 | 流程文档统一用 `python`；仅提供 `python3` 的平台需全局替换 |
 | `gh:<user>/<repo>/<path>` 解析 | **已实测**：`--workflow-source gh:caoguangq/ai-workflow/trellis` 与 `--registry gh:caoguangq/ai-workflow/trellis/specs` 均正常 |
 | plugin marketplace 与 Trellis registry 共存 | 同一仓库同时承载两者，已实测不冲突 |
-| 首次拉取超时 | Trellis 的 index 探测超时为 5s，冷启动或网络抖动时可能失败。重试即可 |
+| 首次拉取超时 | Trellis 的 index 探测超时为 5s（`TIMEOUTS.INDEX_FETCH_MS`），冷启动或网络抖动时可能连续失败数次。重试 `trellis init` 即可，已下载的文件会跳过 |
 
 ## 目录
 
