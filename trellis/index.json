@@ -1,0 +1,11 @@
+{
+  "templates": [
+    {
+      "id": "rigor",
+      "type": "workflow",
+      "name": "Rigor Workflow",
+      "description": "规划、复核、派发三阶段硬闸门的开发工作流",
+      "path": "workflows/rigor.md"
+    }
+  ]
+}

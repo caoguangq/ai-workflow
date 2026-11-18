@@ -1,0 +1,11 @@
+{
+  "name": "ai-workflow",
+  "owner": { "name": "caoguangqian" },
+  "plugins": [
+    {
+      "name": "ai-workflow",
+      "source": "./",
+      "description": "通用 AI 开发工作流：Trellis 流程权威 + 独立复核 + 并行派发"
+    }
+  ]
+}
