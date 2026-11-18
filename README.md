@@ -23,17 +23,35 @@
 ## 状态机
 
 ```
-planning ──产物齐备──▶ reviewing ──0 个 P0/P1──▶ dispatching ──用户批准──▶ in_progress ──▶ 归档
-   ▲                       │                         │                        │
-   └──────── P0/P1 打回 ────┘                         └────── 用户否决 ─────────┘
+[已有项目] ──────────────────────────────────┐
+                                             ├──▶ planning ──▶ reviewing ──▶ dispatching ──▶ in_progress ──▶ 归档
+[新项目] ──▶ bootstrapping ──工具链就绪───┘          ▲            │              │
+                  ▲                                  │            │              │
+                  └── 复核未通过（Phase 0 内循环）    └─ P0/P1 ────┘              └─ 用户否决 ─┘
 ```
 
 | 状态 | 退出条件 |
 | --- | --- |
+| `bootstrapping`（仅新项目） | `stack.md` 与 `design.md` 存在；lint/test/build 真实可运行并写入 `profile`；复核 0 个 P0/P1 |
 | `planning` | `prd.md` 存在；复杂任务需 `design.md`；两个 context jsonl 非空 |
 | `reviewing` | 某一轮 0 个 P0/P1，新增意见全部 ≤ P3 |
 | `dispatching` | `dispatch.md` 落盘且用户明确批准 |
 | `in_progress` | 全部并行组完成且每组检查点通过 |
+
+## 从 0 到 1
+
+新项目在 `planning` 之前多一个 **Phase 0（`bootstrapping`）**：
+
+| 步骤 | 产出 |
+| --- | --- |
+| 0.1 技术选型 | `stack.md`——选型、理由、否决的替代方案、不可逆决策、非功能约束 |
+| 0.2 架构草图 | `design.md`——模块边界、依赖方向、对外契约 |
+| 0.3 骨架落地 | 目录结构 + 构建系统 + 一个能通过的测试，并提交 |
+| 0.4 工具链就绪 | lint/test/build 实测可跑并写入 `profile.commands` |
+| 0.5 复核 | 复用两个复核者，输入换成 stack.md + design.md + 骨架实际文件 |
+| 0.6 进入规划 | 切到 `planning`，此后与已有项目完全一致 |
+
+首轮派发默认近乎串行：构建清单（`pom.xml` / `package.json` / 工作区配置）会被多个子任务同时触碰，已列入 `forbidden_parallel`。
 
 ## 安装
 
@@ -57,7 +75,7 @@ python <本仓库>/scripts/detect_profile.py --root . --write
 /plugin install ai-workflow
 ```
 
-安装完成后用 `wf-init` 技能走一遍完整检查，它会校验流程版本、复制助手、探测画像并做冒烟验证。
+安装完成后用 `wf-init` 技能走一遍完整检查，它会校验流程版本、复制助手、探测画像并做冒烟验证。`wf-init` 会区分两种模式：已有项目校验命令可用性；新项目（greenfield）允许画像为空，直接进入 Phase 0。
 
 ## 升级
 
@@ -90,7 +108,7 @@ python <本仓库>/scripts/detect_profile.py --root . --write
 .claude-plugin/     plugin 与 marketplace 清单
 skills/             wf-init / wf-review / wf-dispatch / wf-preflight
 agents/             对抗型与一致性复核者
-templates/          prd / design / dispatch-plan / review-report
+templates/          prd / stack / design / dispatch-plan / review-report
 scripts/            detect_profile.py / wf_status.py
 tests/              上述脚本的测试
 trellis/            流程权威、市场索引、spec 骨架

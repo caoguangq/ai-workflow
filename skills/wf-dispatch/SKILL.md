@@ -57,6 +57,16 @@ python -c "import re,sys; s=open('.trellis/config.yaml',encoding='utf-8').read()
 
 画像缺失时**停止**，先让用户补齐——不要在不知道冲突源的情况下设计并行。
 
+### greenfield 首轮
+
+新项目在 Phase 0 之后的第一轮派发，默认**接近串行**，原因：
+
+- 构建清单（`pom.xml` / `package.json` / `pnpm-workspace.yaml` / `turbo.json`）几乎每个子任务都会碰，`detect_profile.py` 已把它们放进 `forbidden_parallel`。
+- 领域模型尚未定型，两个并行子任务很容易各自发明一套不一致的抽象。
+- 让第一组先跑通「实现 → 检查 → 提交」的完整链路，比多并行两个任务更有价值。
+
+只有当子任务之间既无共享构建清单、也无共享领域模型时，才允许并行。
+
 ## Step 3: 生成 dispatch.md
 
 写入 `.trellis/tasks/<slug>/dispatch.md`，结构固定：

@@ -56,6 +56,18 @@ def test_forbidden_parallel_detected(tmp_path: Path) -> None:
     assert "migrations/" in detect(tmp_path)["forbidden_parallel"]
 
 
+def test_build_manifest_is_forbidden_parallel(tmp_path: Path) -> None:
+    (tmp_path / "package.json").write_text('{"scripts":{}}', encoding="utf-8")
+    assert "package.json" in detect(tmp_path)["forbidden_parallel"]
+
+
+def test_nested_build_manifest_is_forbidden_parallel(tmp_path: Path) -> None:
+    backend = tmp_path / "backend"
+    backend.mkdir()
+    (backend / "pom.xml").write_text("<project/>", encoding="utf-8")
+    assert "backend/pom.xml" in detect(tmp_path)["forbidden_parallel"]
+
+
 def test_empty_project_no_crash(tmp_path: Path) -> None:
     p = detect(tmp_path)
     assert p["commands"] == {"lint": "", "typecheck": "", "test": "", "build": ""}

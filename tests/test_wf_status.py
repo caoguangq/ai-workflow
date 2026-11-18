@@ -48,7 +48,7 @@ def test_allowed_statuses_cover_workflow_states(tmp_path: Path) -> None:
     workflow = Path(__file__).resolve().parents[1] / "trellis" / "workflows" / "rigor.md"
     (trellis / "workflow.md").write_text(workflow.read_text(encoding="utf-8"), encoding="utf-8")
     states = read_workflow_states(tmp_path)
-    missing = {"planning", "reviewing", "dispatching", "in_progress"} - states
+    missing = {"bootstrapping", "planning", "reviewing", "dispatching", "in_progress"} - states
     assert not missing
     assert set(ALLOWED_STATUSES) <= states
 

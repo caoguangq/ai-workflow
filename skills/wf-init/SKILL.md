@@ -11,6 +11,15 @@ description: 在新项目中初始化本工作流。执行 trellis init 并拉�
 - [ ] 已确认 `trellis` CLI 可用：`trellis --version`。
 - [ ] 已确认 Python 可调用：`python --version`（本工作流文档统一用 `python`）。
 
+## 模式判定
+
+初始化前先判定项目类型，两条路径的差别只在画像处理：
+
+| 模式 | 判定依据 | 画像处理 |
+| --- | --- | --- |
+| 已有项目 | 仓库里已有可运行的 lint / test / build | 探测并校验命令真实可用 |
+| 新项目（greenfield） | 空仓库，或没有构建系统 | 探测结果全空**是预期**，不报错；留到 Phase 0.4 填 |
+
 ## Step 1: 初始化 Trellis 并拉取自定义流程
 
 ```bash
@@ -73,6 +82,19 @@ python <本仓库路径>/scripts/detect_profile.py --root . --write
 - `test` 为空时**不允许挂机执行**——没有自动验证的长任务等于盲跑。
 - `lint` / `typecheck` 为空时，检查点阶段会跳过并在报告中注明，可以接受。
 - `shared_resources` 必须覆盖所有会导致并行互踩的文件（compose、环境文件、锁文件）。
+
+**greenfield 模式**：此处四个命令都可以继续留空，直接进入 Phase 0。但 Phase 0 退出前必须填满 `lint` / `test` / `build` 三项并实测通过——这是 Phase 0 的退出条件之一，不是可选项。
+
+## Step 4.5: greenfield 的首次任务
+
+新建第一个任务时，状态默认是 `planning`，需要手动切到 `bootstrapping`：
+
+```bash
+python .trellis/scripts/task.py create "项目立项" --slug bootstrap --description "技术选型、架构与骨架"
+python .trellis/scripts/wf_status.py .trellis/tasks/<date>-bootstrap bootstrapping
+```
+
+Phase 0 完成后切回 `planning`，再按常规流程为第一个功能建任务。
 
 ## Step 5: 接入方法论层
 

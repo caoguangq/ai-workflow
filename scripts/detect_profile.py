@@ -16,6 +16,8 @@ COMMAND_KEYS = ("lint", "typecheck", "test", "build")
 DEFAULT_MAX_PARALLEL = 3
 SHARED_RESOURCE_PATTERNS = ("docker-compose*.yml", ".env", ".env.prod", ".env.*.example")
 FORBIDDEN_DIRS = ("migrations", "src/main/resources/db/migration")
+# 构建清单在项目早期频繁变动，且一旦并行修改必然互相覆盖。
+FORBIDDEN_FILES = ("pom.xml", "build.gradle", "build.gradle.kts", "package.json", "pnpm-workspace.yaml", "turbo.json")
 
 
 def _empty_commands() -> dict[str, str]:
@@ -130,6 +132,17 @@ def _forbidden_parallel(root: Path) -> list[str]:
             entry = name if name.endswith("/") else f"{name}/"
             if entry not in found:
                 found.append(entry)
+
+    file_candidates = list(FORBIDDEN_FILES)
+    try:
+        for child in root.iterdir():
+            if child.is_dir() and not child.name.startswith("."):
+                file_candidates.extend(f"{child.name}/{name}" for name in FORBIDDEN_FILES)
+    except OSError:
+        pass
+    for name in file_candidates:
+        if (root / name).is_file() and name not in found:
+            found.append(name)
     return found
 
 

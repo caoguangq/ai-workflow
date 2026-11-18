@@ -111,6 +111,7 @@ planning ──规划产物齐备──▶ reviewing ──0 个 P0/P1──▶ 
 
 | 状态 | 阶段内容 | 退出条件（硬性） |
 | --- | --- | --- |
+| `bootstrapping` | **仅新项目**：0.1 选型 → 0.2 架构 → 0.3 骨架 → 0.4 工具链 → 0.5 复核 | `stack.md` 与 `design.md` 存在；lint/test/build 实测可运行；复核 0 个 P0/P1 |
 | `planning` | 1.0 建任务 → 1.1 需求探索 → 1.2 调研 → 1.3 登记上下文清单 | `prd.md` 存在；复杂任务需 `design.md`；`implement.jsonl` 与 `check.jsonl` 均非空 |
 | `reviewing` | 1.4 独立复核循环 | 某一轮 0 个 P0/P1，且新增意见全部 ≤ P3 |
 | `dispatching` | 1.5 派发计划 | `dispatch.md` 落盘且用户明确批准 |
@@ -136,9 +137,38 @@ planning ──规划产物齐备──▶ reviewing ──0 个 P0/P1──▶ 
 
 「复杂任务」在本设计中统一定义为：**存在 `design.md` 的任务**。此时复核必须同时覆盖 `prd.md` 与 `design.md`。
 
+### 新项目：Phase 0（`bootstrapping`）
+
+从 0 到 1 时，Phase 1 之前插入一个立项阶段。原因是三者缺一不可：
+
+1. 检查点要求 lint/test 可运行，空项目没有这些东西；
+2. `prd.md` / `design.md` 模板的字段（现状、跨层影响、回滚）假设了已有代码；
+3. 技术选型与模块边界是 0→1 中代价最高的决策，原流程里没有任何阶段承载它。
+
+| 步骤 | 产出 | 退出条件 |
+| --- | --- | --- |
+| 0.1 技术选型 | `stack.md` | 含至少一个被否决的替代方案；不可逆决策已论证 |
+| 0.2 架构草图 | `design.md` | 模块边界、依赖方向、对外契约 |
+| 0.3 骨架落地 | 目录 + 构建系统 + 一个通过的测试 | 骨架已提交 |
+| 0.4 工具链就绪 | `profile.commands` 填满 | lint / test / build 实测退出码 0 |
+| 0.5 复核 | `review/round-N-*` | 与 Phase 1 相同的判停规则 |
+| 0.6 进入规划 | 状态切到 `planning` | — |
+
+`bootstrapping` 期间 `profile.commands` 为空是合法的；退出前必须填满 lint / test / build。
+
+复核输入与 Phase 1 的差异：用 `stack.md` 替代 `prd.md`，并**必须提供选型的理由与限制**——此阶段没有代码可对照，只给结论会让复核者退回通用直觉。
+
+派发差异：首轮默认近乎串行；构建清单（`pom.xml` / `package.json` / `pnpm-workspace.yaml` / `turbo.json`）已由 `detect_profile.py` 列入 `forbidden_parallel`。
+
 ### 状态切换命令
 
 ```bash
+# 新项目：进入立项
+python .trellis/scripts/wf_status.py <task-dir> bootstrapping
+
+# 立项完成，进入需求规划
+python .trellis/scripts/wf_status.py <task-dir> planning
+
 # 进入复核
 python .trellis/scripts/wf_status.py <task-dir> reviewing
 

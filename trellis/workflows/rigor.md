@@ -32,17 +32,27 @@
 ## 2. 状态机
 
 ```
-planning ──规划产物齐备──▶ reviewing ──0 个 P0/P1──▶ dispatching ──用户批准──▶ in_progress ──▶ 归档
-   ▲                          │                          │                        │
-   └──────── P0/P1 打回 ───────┘                          └────── 用户否决 ─────────┘
+[已有项目] ───────────────────────────────────────────────┐
+                                                          ├──▶ planning ──▶ reviewing ──▶ dispatching ──▶ in_progress ──▶ 归档
+[新项目] ──▶ bootstrapping ──工具链就绪 + 复核通过───────┘         ▲            │              │
+                    ▲                                              │            │              │
+                    └──── 复核未通过（Phase 0 内循环）              └─ P0/P1 ────┘              └─ 用户否决 ─┘
 ```
 
 | 状态 | 含义 | 退出条件 |
 | --- | --- | --- |
+| `bootstrapping` | **仅新项目**。技术选型、架构、骨架、工具链 | `stack.md` 与 `design.md` 存在；`profile.commands` 的 lint/test/build 全部可真实运行；复核 0 个 P0/P1 |
 | `planning` | 需求探索与规划 | `prd.md` 存在；复杂任务需 `design.md`；`implement.jsonl` 与 `check.jsonl` 均非空 |
 | `reviewing` | 独立复核循环 | 某一轮 0 个 P0/P1，且新增意见全部 ≤ P3 |
 | `dispatching` | 派发计划待批 | `dispatch.md` 落盘且用户明确批准 |
 | `in_progress` | 执行与收尾 | 全部并行组完成，每组检查通过 |
+
+**两种入口**：
+
+- **已有项目**：`create` 后状态即 `planning`，直接进 Phase 1。
+- **新项目**：`create` 后先 `wf_status.py <task-dir> bootstrapping`，走完 Phase 0 再进入 Phase 1。
+
+判断依据：仓库里已有可运行的 lint/test/build 命令 → 已有项目；连构建系统都没有 → 新项目。
 
 状态写入方式：
 
@@ -80,6 +90,17 @@ python .trellis/scripts/wf_status.py <task-dir> in_progress # 显式翻转状态
 禁止：任何其他操作。
 下一步：检查 JSON 合法性后重新执行 `task.py current`。
 [/workflow-state:task_error]
+
+[workflow-state:bootstrapping]
+阶段：立项（仅新项目）。目标是让仓库具备可运行的工程基础。
+允许：技术选型；写 stack.md / design.md；搭目录与构建系统；跑通一行能过的测试；补 profile.commands。
+禁止：编写业务功能代码；跳过工具链直接进入需求规划。
+退出条件：stack.md 与 design.md 存在；lint/test/build 三条命令真实可运行并已写入 profile；复核 0 个 P0/P1。
+**本阶段 `profile.commands` 为空是合法的**，但退出前必须填满 lint/test/build 三项。
+下一步：退出条件满足后执行
+`python .trellis/scripts/wf_status.py <task-dir> planning`，然后进入 Phase 1。
+复核流程见 Phase 0.5，复用 wf-review 技能。
+[/workflow-state:bootstrapping]
 
 [workflow-state:planning]
 阶段：规划。目标是把需求变成可复核的产物。
@@ -140,9 +161,78 @@ python .trellis/scripts/wf_status.py <task-dir> in_progress # 显式翻转状态
 
 「复杂任务」在本工作流中统一定义为：**存在 `design.md` 的任务**。
 
+**新项目例外**：Phase 0（`bootstrapping`）期间不适用分流——立项阶段本身就是全量流程，且必须复核。Phase 0 完成后，后续任务按常规两档判定。
+
 ---
 
-## 5. Phase 1: Plan
+## 5. Phase 0: Bootstrap（仅新项目）
+
+从 0 到 1 时，最先要解决的不是需求，而是「什么栈、什么骨架、怎么验证」。跳过这一步直接进 Phase 1，会得到一份无法验证的 PRD。
+
+判断是否走本阶段：仓库里已有可运行的 lint/test/build → 跳过，直接 Phase 1；否则必须走完。
+
+### 0.1 技术选型 `[required · once]`
+
+产出 `stack.md`（用 `templates/stack.md`）。必须包含：
+
+- 每一项选型（语言、框架、数据库、构建工具、测试框架）及其理由。
+- **至少一个被认真考虑后否决的替代方案**，写明否决理由。空着视为未完成。
+- 非功能约束：预期的并发量、数据规模、部署形态、团队熟悉度。
+- 不可逆决策单独标出（例如数据库类型、API 风格）——这些错了代价最高。
+
+先查证再提问：库的具体版本与兼容性从官方文档或仓库确认，不要凭记忆。
+
+### 0.2 架构草图 `[required · once]`
+
+产出 `design.md`。重点不是细节，而是**边界**：
+
+- 模块划分与各自职责，模块之间允许的依赖方向。
+- 核心领域对象与它们的生命周期。
+- 对外契约的形态（API 风格、数据结构、错误约定）。
+- 哪些决策留待后续任务再定，以及为什么现在不定。
+
+### 0.3 骨架落地 `[required · once]`
+
+目标：让仓库从"空"变成"能跑"。
+
+- 目录结构落到磁盘。
+- 构建系统可用，能产出可运行产物。
+- 一行能通过的测试（哪怕只断言 `true`）——它的作用是证明测试链路是通的。
+- 一条 lint 命令可运行。
+
+骨架本身是一个可提交的检查点：**提交后再进入下一步**，这样后续所有改动都有回滚点。
+
+### 0.4 工具链就绪 `[required · once]`
+
+把真实可用的命令写入 `.trellis/config.yaml` 的 `profile.commands`：
+
+- `lint` / `test` / `build` **三项必须填满且实测能跑通**。
+- `typecheck` 没有就留空，合法。
+- 同时填 `shared_resources`（compose、环境文件、锁文件）与 `forbidden_parallel`（迁移目录、构建清单）。
+
+实测方式：逐条在终端跑一遍，确认退出码为 0。**没跑过的命令不算填好。**
+
+### 0.5 复核 `[required · once 起]`
+
+调用 `wf-review` 技能，但输入与 Phase 1 不同：
+
+- 输入：`stack.md`、`design.md`、骨架的实际文件清单、`profile.commands` 的实际输出。
+- 复核重点：选型是否自相矛盾、模块边界是否闭合、非功能约束是否被选型满足、不可逆决策是否被论证。
+- 判停规则与 Phase 1 相同（0 个 P0/P1，上限 5 轮）。
+
+复核者在这阶段找不到代码可对照，所以**必须把选型的理由与限制一起给它**——否则它只能凭通用直觉判断。
+
+### 0.6 进入规划
+
+```bash
+python .trellis/scripts/wf_status.py <task-dir> planning
+```
+
+此后与已有项目走完全相同的流程。
+
+---
+
+## 6. Phase 1: Plan
 
 ### 1.0 建任务 `[required · once]`
 
@@ -192,7 +282,7 @@ python .trellis/scripts/task.py add-context <task-dir> check <文件路径> "<�
 
 ---
 
-## 6. Phase 2: Execute
+## 7. Phase 2: Execute
 
 ### 2.1 按组执行 `[required · repeatable]`
 
@@ -220,7 +310,7 @@ python .trellis/scripts/task.py add-context <task-dir> check <文件路径> "<�
 
 ---
 
-## 7. Phase 3: Finish
+## 8. Phase 3: Finish
 
 ### 3.1 复盘 `[optional]`
 
@@ -244,7 +334,7 @@ git commit -m "<type>: <描述>"
 
 ---
 
-## 8. 项目画像
+## 9. 项目画像
 
 工作流只读 `profile:` 段，**不得硬编码任何命令**。
 
@@ -270,7 +360,7 @@ profile:
 
 ---
 
-## 9. 与 Superpowers 的边界
+## 10. 与 Superpowers 的边界
 
 **允许**（作为实施条款）：
 
@@ -295,7 +385,7 @@ profile:
 
 ---
 
-## 10. 规则与护栏
+## 11. 规则与护栏
 
 - 任务创建批准 ≠ 实现批准。实现必须等用户名明确批准 `dispatch.md`。
 - 复核者看不到作者推理、看不到上一轮报告、看不到会话摘要。

@@ -16,7 +16,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-ALLOWED_STATUSES = ("planning", "reviewing", "dispatching", "in_progress")
+ALLOWED_STATUSES = ("bootstrapping", "planning", "reviewing", "dispatching", "in_progress")
 TAG_RE = re.compile(r"\[workflow-state:([A-Za-z0-9_-]+)\]")
 
 

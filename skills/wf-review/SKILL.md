@@ -32,6 +32,13 @@ python .trellis/scripts/wf_status.py <task-dir> reviewing
 - `.trellis/spec/` 中适用的条目
 - 项目 `AGENTS.md` / `CLAUDE.md`
 
+**Phase 0（greenfield）的输入差异**：
+
+- 用 `stack.md` 替代 `prd.md`，`design.md` 仍需要。
+- 额外提供：骨架的实际文件清单、`profile.commands` 的真实运行输出。
+- **把选型的理由与限制一起提供**——这阶段没有代码可对照，只给结论的话复核者只能凭通用直觉判断，会漏掉项目特有的约束。
+- 复核重点：选型是否自相矛盾、模块边界是否闭合、非功能约束是否被选型满足、不可逆决策是否被论证。
+
 **绝不包含**：
 
 - 作者的推理过程、自我辩护、"我已经考虑过 X"
