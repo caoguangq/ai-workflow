@@ -381,7 +381,7 @@ trellis init --claude --workflow rigor \
 
 ## 12. 实现前需实测的假设
 
-1. `gh:<user>/<repo>/<path>` 形式能否同时用于 `--workflow-source`（需 `index.json` 在该路径根）与 `--registry`（整目录下载）。
-2. 同一仓库同时作为 Claude Code plugin marketplace 与 Trellis registry，安装时是否互不干扰。
+1. ~~`gh:<user>/<repo>/<path>` 形式能否同时用于 `--workflow-source`（需 `index.json` 在该路径根）与 `--registry`（整目录下载）~~ —— 已实测通过。
+2. ~~同一仓库同时作为 Claude Code plugin marketplace 与 Trellis registry，安装时是否互不干扰~~ —— 已实测不冲突。
 3. Windows 下 Python 命令探测：目标机器 `python3` 不存在、仅有 `python`，`init` 是否正确写入 `{{PYTHON_CMD}}`。
 4. ~~`set-meta status` 写入后面包屑是否识别~~ —— E2E 已实测：**不识别**，且不报错。已改用 `scripts/wf_status.py` 写顶层字段。

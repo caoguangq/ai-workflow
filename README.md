@@ -80,8 +80,9 @@ python <本仓库>/scripts/detect_profile.py --root . --write
 | `task.py start` | 只在原状态为 `planning` 时翻转为 `in_progress`；从 `dispatching` 进入执行需 `start` + `wf_status.py` 两步 |
 | Windows Python 命令 | `trellis init` 在本机已正确渲染为 `python`（实测），非 `python3` |
 | 命令写法 | 流程文档统一用 `python`；仅提供 `python3` 的平台需全局替换 |
-| `gh:<user>/<repo>/<path>` 解析 | **未实测**（需要已推送的远程仓库）。首次安装请先跑 `wf-init` 的校验步骤 |
-| plugin marketplace 与 Trellis registry 共存 | **未实测**，同上 |
+| `gh:<user>/<repo>/<path>` 解析 | **已实测**：`--workflow-source gh:caoguangq/ai-workflow/trellis` 与 `--registry gh:caoguangq/ai-workflow/trellis/specs` 均正常 |
+| plugin marketplace 与 Trellis registry 共存 | 同一仓库同时承载两者，已实测不冲突 |
+| 首次拉取超时 | Trellis 的 index 探测超时为 5s，冷启动或网络抖动时可能失败。重试即可 |
 
 ## 目录
 
