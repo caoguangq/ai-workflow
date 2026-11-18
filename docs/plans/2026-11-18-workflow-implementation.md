@@ -469,7 +469,7 @@ Expected: 4 passed
 
 - [ ] **Step 6: 对真实项目试跑（只读）**
 
-Run: `python scripts/detect_profile.py --root /d/project/ganheng-evaluating --dry-run`
+Run: `python scripts/detect_profile.py --root <项目根> --dry-run`
 Expected: 输出含 `test: ./mvnw test`、`shared_resources` 含 `docker-compose.prod.yml`、`max_parallel: 3`；不写任何文件
 
 - [ ] **Step 7: 提交**
